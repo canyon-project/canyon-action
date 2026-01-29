@@ -17017,6 +17017,9 @@ async function run() {
 		const instrumentCwd = import_core.getInput("instrument-cwd", { required: true });
 		const buildTarget = import_core.getInput("build-target") || "";
 		const githubInfo = getGitHubInfo();
+		Object.entries(githubInfo).forEach((item) => {
+			console.log(`key:${item[0]},value:${item[1]}`);
+		});
 		import_core.info(`Loading coverage file: ${coverageFile}`);
 		const coverage = loadCoverageFile(coverageFile);
 		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in file");
