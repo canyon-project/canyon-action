@@ -16987,7 +16987,7 @@ function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
 		githubInfo,
 		instrumentCwd,
 		buildTarget
-	});
+	}, "1.0.7");
 	const firstCoverageValue = Object.values(coverage)[0];
 	console.log({ firstCoverageValue });
 	const buildInfo = {
