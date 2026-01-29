@@ -90,7 +90,7 @@ function prepareMapInitData(
     githubInfo,
     instrumentCwd,
     buildTarget
-  })
+  },'1.0.7')
 
   // 从 coverage 的第一个值中提取信息（如果存在）
   const firstCoverageValue = Object.values(coverage)[0];
