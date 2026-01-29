@@ -126,7 +126,9 @@ async function run() {
     const buildTarget = core.getInput('build-target') || '';
 
     const githubInfo = getGitHubInfo();
-
+    Object.entries(githubInfo).forEach((item)=>{
+      console.log(`key:${item[0]},value:${item[1]}`)
+    })
     core.info(`Loading coverage file: ${coverageFile}`);
     const coverage = loadCoverageFile(coverageFile);
 
