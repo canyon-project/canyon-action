@@ -30,23 +30,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build
-        run: pnpm run build
-
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
@@ -72,6 +55,23 @@ jobs:
             # 推送新分支到远程
             git push -u origin release || true
           fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
 
       - name: Determine version bump type
         id: version_type
