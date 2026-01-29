@@ -16942,13 +16942,9 @@ var import_core = /* @__PURE__ */ __toESM(require_core());
 * 从 GitHub Actions 环境变量获取仓库信息
 */
 function getGitHubInfo() {
-	const repository = process.env.GITHUB_REPOSITORY || "";
-	const [owner, repo] = repository.split("/");
 	return {
 		provider: "github",
-		repoID: repository,
-		owner,
-		repo,
+		repoID: process.env.GITHUB_REPOSITORY_ID || "",
 		sha: process.env.GITHUB_SHA || "",
 		ref: process.env.GITHUB_REF || "",
 		workflow: process.env.GITHUB_WORKFLOW || "",
@@ -16957,39 +16953,25 @@ function getGitHubInfo() {
 	};
 }
 /**
-* 读取并合并多个 coverage 文件
+* 读取单个 coverage 文件
 */
-function loadCoverageFiles(filePaths) {
-	const mergedCoverage = {};
-	for (const filePath of filePaths) {
-		const fullPath = path.resolve(filePath.trim());
-		if (!fs.existsSync(fullPath)) {
-			import_core.warning(`Coverage file not found: ${fullPath}`);
-			continue;
-		}
-		try {
-			const content = fs.readFileSync(fullPath, "utf-8");
-			const coverage = JSON.parse(content);
-			Object.assign(mergedCoverage, coverage);
-			import_core.info(`Loaded coverage from: ${fullPath}`);
-		} catch (error$1) {
-			import_core.error(`Failed to parse coverage file ${fullPath}: ${error$1}`);
-			throw error$1;
-		}
+function loadCoverageFile(filePath) {
+	const fullPath = path.resolve(filePath.trim());
+	if (!fs.existsSync(fullPath)) throw new Error(`Coverage file not found: ${fullPath}`);
+	try {
+		const content = fs.readFileSync(fullPath, "utf-8");
+		const coverage = JSON.parse(content);
+		import_core.info(`Loaded coverage from: ${fullPath}`);
+		return coverage;
+	} catch (error$1) {
+		import_core.error(`Failed to parse coverage file ${fullPath}: ${error$1}`);
+		throw error$1;
 	}
-	return mergedCoverage;
 }
 /**
 * 准备 map/init 请求的数据
 */
 function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
-	console.log({
-		githubInfo,
-		instrumentCwd,
-		buildTarget
-	}, "1.0.7");
-	const firstCoverageValue = Object.values(coverage)[0];
-	console.log({ firstCoverageValue });
 	const buildInfo = {
 		workflow: githubInfo.workflow,
 		runId: githubInfo.runId,
@@ -16997,33 +16979,13 @@ function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
 		ref: githubInfo.ref
 	};
 	return {
-		sha: firstCoverageValue?.sha || githubInfo.sha,
-		provider: firstCoverageValue?.provider || githubInfo.provider,
-		repoID: firstCoverageValue?.repoID || githubInfo.repoID,
-		instrumentCwd: firstCoverageValue?.instrumentCwd || instrumentCwd,
-		buildTarget: firstCoverageValue?.buildTarget || buildTarget || "",
+		sha: githubInfo.sha,
+		provider: githubInfo.provider,
+		repoID: githubInfo.repoID,
+		instrumentCwd,
+		buildTarget: buildTarget || "",
 		build: buildInfo,
 		coverage
-	};
-}
-/**
-* 准备 client 请求的数据
-*/
-function prepareClientData(coverage, scene) {
-	const cleanedCoverage = {};
-	const fieldsToRemove = [
-		"statementMap",
-		"fnMap",
-		"branchMap",
-		"inputSourceMap"
-	];
-	for (const [filePath, coverageData] of Object.entries(coverage)) if (coverageData && typeof coverageData === "object") {
-		cleanedCoverage[filePath] = { ...coverageData };
-		for (const field of fieldsToRemove) delete cleanedCoverage[filePath][field];
-	}
-	return {
-		coverage: cleanedCoverage,
-		scene
 	};
 }
 /**
@@ -17049,46 +17011,22 @@ async function sendRequest(url, data, token) {
 async function run() {
 	const failOnError = import_core.getInput("fail-on-error") === "" ? true : import_core.getBooleanInput("fail-on-error");
 	try {
-		const coverageFileInput = import_core.getInput("coverage-file", { required: true });
+		const coverageFile = import_core.getInput("coverage-file", { required: true });
 		const canyonUrl = import_core.getInput("canyon-url", { required: true });
 		const canyonToken = import_core.getInput("canyon-token");
 		const instrumentCwd = import_core.getInput("instrument-cwd", { required: true });
 		const buildTarget = import_core.getInput("build-target") || "";
-		const sceneInput = import_core.getInput("scene") || "{}";
-		const coverageFilePaths = coverageFileInput.split(",").map((f) => f.trim()).filter((f) => f.length > 0);
-		if (coverageFilePaths.length === 0) throw new Error("No coverage files specified");
-		let scene = {};
-		try {
-			scene = JSON.parse(sceneInput);
-		} catch (error$1) {
-			import_core.warning(`Failed to parse scene JSON: ${error$1}. Using empty object.`);
-			scene = {};
-		}
 		const githubInfo = getGitHubInfo();
-		scene = {
-			...scene,
-			source: "automation",
-			type: "ci",
-			env: "test",
-			trigger: "pipeline",
-			...githubInfo
-		};
-		import_core.info(`Loading coverage files: ${coverageFilePaths.join(", ")}`);
-		const coverage = loadCoverageFiles(coverageFilePaths);
-		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in files");
+		import_core.info(`Loading coverage file: ${coverageFile}`);
+		const coverage = loadCoverageFile(coverageFile);
+		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in file");
 		import_core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
 		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget);
 		import_core.info("Uploading coverage map initialization...");
 		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
 		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
-		import_core.info(`Map init successful. BuildHash: ${mapInitResult.buildHash}`);
-		const clientData = prepareClientData(coverage, scene);
-		import_core.info("Uploading coverage data...");
-		const clientResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/client`, clientData, canyonToken);
-		if (!clientResult.success) throw new Error(`Client upload failed: ${clientResult.message || "Unknown error"}`);
-		import_core.info(`Coverage upload successful. BuildHash: ${clientResult.buildHash}, SceneKey: ${clientResult.sceneKey}`);
-		import_core.setOutput("build-hash", clientResult.buildHash);
-		import_core.setOutput("scene-key", clientResult.sceneKey);
+		import_core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
+		import_core.setOutput("build-hash", mapInitResult.buildHash);
 	} catch (error$1) {
 		const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
 		import_core.error(errorMessage);
