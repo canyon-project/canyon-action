@@ -5,7 +5,7 @@ branding:
   color: 'blue'
 inputs:
   coverage-file:
-    description: 'Path to coverage JSON file(s), comma-separated for multiple files'
+    description: 'Path to coverage JSON file'
     required: true
   canyon-url:
     description: 'Canyon server URL'
@@ -20,10 +20,6 @@ inputs:
     description: 'Build target (optional)'
     required: false
     default: ''
-  scene:
-    description: 'Scene information as JSON string (optional)'
-    required: false
-    default: '{}'
   fail-on-error:
     description: 'Fail the action if upload fails'
     required: false
