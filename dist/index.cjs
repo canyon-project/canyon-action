@@ -16983,7 +16983,13 @@ function loadCoverageFiles(filePaths) {
 * 准备 map/init 请求的数据
 */
 function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
+	console.log({
+		githubInfo,
+		instrumentCwd,
+		buildTarget
+	});
 	const firstCoverageValue = Object.values(coverage)[0];
+	console.log({ firstCoverageValue });
 	const buildInfo = {
 		workflow: githubInfo.workflow,
 		runId: githubInfo.runId,

@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout or create release branch
+        run: |
+          # 确保在 main 分支
+          git checkout main
+          git pull origin main
+          
+          # 检查 release 分支是否存在
+          if git ls-remote --heads origin release | grep -q release; then
+            echo "Release branch exists, checking out..."
+            git fetch origin release
+            git checkout release
+            git pull origin release || true
+            # 合并 main 的最新更改（优先使用 release 分支的 package.json）
+            git merge main --no-edit -X theirs || git merge --abort || true
+          else
+            echo "Release branch does not exist, creating from main..."
+            git checkout -b release
+            # 推送新分支到远程
+            git push -u origin release || true
+          fi
+
+      - name: Determine version bump type
+        id: version_type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump version
+        id: version
+        run: |
+          VERSION_TYPE="${{ steps.version_type.outputs.type }}"
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          
+          # 使用 node 直接更新版本号（更可靠）
+          NEW_VERSION=$(node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            const [major, minor, patch] = pkg.version.split('.').map(Number);
+            
+            let newVersion;
+            if ('$VERSION_TYPE' === 'major') {
+              newVersion = \`\${major + 1}.0.0\`;
+            } else if ('$VERSION_TYPE' === 'minor') {
+              newVersion = \`\${major}.\${minor + 1}.0\`;
+            } else {
+              newVersion = \`\${major}.\${minor}.\${patch + 1}\`;
+            }
+            
+            pkg.version = newVersion;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log(newVersion);
+          ")
+          
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped version from $CURRENT_VERSION to $NEW_VERSION"
+
+      - name: Commit dist and version changes
+        run: |
+          git add dist/ package.json
+          git commit -m "chore: release v${{ steps.version.outputs.version }} [skip ci]" || exit 0
+
+      - name: Create and push tag
+        run: |
+          git tag -a "v${{ steps.version.outputs.version }}" -m "Release v${{ steps.version.outputs.version }}"
+          git push origin release
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## Changes
+            
+            Automated release v${{ steps.version.outputs.version }}
+            
+            ### Built Files
+            - `dist/index.cjs` - Bundled action with all dependencies
+          draft: false
+          prerelease: false
+          files: dist/index.cjs
