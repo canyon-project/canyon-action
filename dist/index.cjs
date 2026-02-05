@@ -16994,9 +16994,17 @@ function loadDiffData() {
 */
 function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget, diffData) {
 	const branch = extractBranchFromRef(githubInfo.ref);
+	const isGitHubActions = process.env.GITHUB_ACTIONS === "true" || !!process.env.GITHUB_EVENT_PATH;
+	let githubEvent;
+	if (isGitHubActions && process.env.GITHUB_EVENT_PATH) try {
+		if (fs.existsSync(process.env.GITHUB_EVENT_PATH)) githubEvent = fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8");
+		else console.log("GITHUB_EVENT_PATH file not found:", process.env.GITHUB_EVENT_PATH);
+	} catch (error$1) {
+		console.warn("Failed to read GITHUB_EVENT_PATH:", error$1);
+	}
 	const buildInfo = {
 		provider: "github_actions",
-		event: process.env.GITHUB_EVENT_NAME,
+		event: githubEvent,
 		buildID: githubInfo.runId,
 		branch
 	};
