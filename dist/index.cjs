@@ -16945,17 +16945,43 @@ function extractBranchFromRef(ref) {
 	if (ref.startsWith("refs/heads/")) return ref.replace("refs/heads/", "");
 }
 /**
+* 从 GitHub event 文件中获取 PR head 信息
+*/
+function getPullRequestHeadInfo() {
+	const eventPath = process.env.GITHUB_EVENT_PATH;
+	if (!eventPath || !fs.existsSync(eventPath)) return {};
+	try {
+		const eventContent = fs.readFileSync(eventPath, "utf-8");
+		const pullRequest = JSON.parse(eventContent).pull_request;
+		if (pullRequest?.head) return {
+			sha: pullRequest.head.sha,
+			repoID: pullRequest.head.repo?.id?.toString()
+		};
+	} catch (error$1) {
+		import_core.warning(`Failed to parse GitHub event file: ${error$1}`);
+	}
+	return {};
+}
+/**
 * 从 GitHub Actions 环境变量获取仓库信息
 */
 function getGitHubInfo() {
+	const prHeadInfo = getPullRequestHeadInfo();
+	const repoID = prHeadInfo.repoID || process.env.GITHUB_REPOSITORY_ID || "";
+	const sha = prHeadInfo.sha || process.env.GITHUB_SHA || "";
+	const ref = process.env.GITHUB_REF || "";
+	const workflow = process.env.GITHUB_WORKFLOW || "";
+	const runId = process.env.GITHUB_RUN_ID || "";
+	const runAttempt = process.env.GITHUB_RUN_ATTEMPT || "";
+	if (prHeadInfo.sha || prHeadInfo.repoID) import_core.info(`Using PR head info - sha: ${sha}, repoID: ${repoID}`);
 	return {
 		provider: "github",
-		repoID: process.env.GITHUB_REPOSITORY_ID || "",
-		sha: process.env.GITHUB_SHA || "",
-		ref: process.env.GITHUB_REF || "",
-		workflow: process.env.GITHUB_WORKFLOW || "",
-		runId: process.env.GITHUB_RUN_ID || "",
-		runAttempt: process.env.GITHUB_RUN_ATTEMPT || ""
+		repoID,
+		sha,
+		ref,
+		workflow,
+		runId,
+		runAttempt
 	};
 }
 /**
