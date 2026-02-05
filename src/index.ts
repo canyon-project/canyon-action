@@ -7,6 +7,17 @@ interface BuildInfo {
 }
 
 /**
+ * 从 ref 中提取分支名
+ */
+function extractBranchFromRef(ref: string): string | undefined {
+  // ref 格式通常是 refs/heads/main, refs/tags/v1.0.0 等
+  if (ref.startsWith('refs/heads/')) {
+    return ref.replace('refs/heads/', '');
+  }
+  return undefined;
+}
+
+/**
  * 从 GitHub Actions 环境变量获取仓库信息
  */
 function getGitHubInfo() {
@@ -50,6 +61,25 @@ function loadCoverageFile(filePath: string): any {
 }
 
 /**
+ * 读取 diff.json 文件（如果存在）
+ */
+function loadDiffData(): any | undefined {
+  const diffJsonPath = path.resolve('diff.json');
+  if (fs.existsSync(diffJsonPath)) {
+    try {
+      const diffJsonContent = fs.readFileSync(diffJsonPath, 'utf-8');
+      const diffData = JSON.parse(diffJsonContent);
+      core.info(`Found diff.json file: ${diffJsonPath}`);
+      return diffData;
+    } catch (error) {
+      core.warning(`Failed to read or parse diff.json: ${error}`);
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
  * 准备 map/init 请求的数据
  */
 function prepareMapInitData(
@@ -57,12 +87,16 @@ function prepareMapInitData(
   githubInfo: ReturnType<typeof getGitHubInfo>,
   instrumentCwd: string,
   buildTarget: string,
+  diffData?: any,
 ): any {
+  const branch = extractBranchFromRef(githubInfo.ref);
+  const githubEventName = process.env.GITHUB_EVENT_NAME;
+  
   const buildInfo: BuildInfo = {
-    workflow: githubInfo.workflow,
-    runId: githubInfo.runId,
-    runAttempt: githubInfo.runAttempt,
-    ref: githubInfo.ref,
+    provider: 'github_actions',
+    event: githubEventName,
+    buildID: githubInfo.runId,
+    branch: branch,
   };
 
   return {
@@ -73,6 +107,7 @@ function prepareMapInitData(
     buildTarget: buildTarget || '',
     build: buildInfo,
     coverage,
+    ...(diffData && { diff: diffData }),
   };
 }
 
@@ -126,9 +161,6 @@ async function run() {
     const buildTarget = core.getInput('build-target') || '';
 
     const githubInfo = getGitHubInfo();
-    Object.entries(githubInfo).forEach((item)=>{
-      console.log(`key:${item[0]},value:${item[1]}`)
-    })
     core.info(`Loading coverage file: ${coverageFile}`);
     const coverage = loadCoverageFile(coverageFile);
 
@@ -138,12 +170,16 @@ async function run() {
 
     core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
 
+    // 尝试读取 diff.json 文件
+    const diffData = loadDiffData();
+
     // 准备 map/init 数据
     const mapInitData = prepareMapInitData(
       coverage,
       githubInfo,
       instrumentCwd,
       buildTarget,
+      diffData,
     );
 
     // 调用 map/init 接口
