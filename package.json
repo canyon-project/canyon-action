@@ -1,6 +1,6 @@
 {
   "name": "@canyonjs/action",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "GitHub Action to upload coverage reports to Canyon",
   "main": "dist/index.js",
   "scripts": {
