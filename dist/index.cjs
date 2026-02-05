@@ -16939,6 +16939,12 @@ var require_core = /* @__PURE__ */ __commonJSMin(((exports) => {
 //#region src/index.ts
 var import_core = /* @__PURE__ */ __toESM(require_core());
 /**
+* 从 ref 中提取分支名
+*/
+function extractBranchFromRef(ref) {
+	if (ref.startsWith("refs/heads/")) return ref.replace("refs/heads/", "");
+}
+/**
 * 从 GitHub Actions 环境变量获取仓库信息
 */
 function getGitHubInfo() {
@@ -16969,14 +16975,30 @@ function loadCoverageFile(filePath) {
 	}
 }
 /**
+* 读取 diff.json 文件（如果存在）
+*/
+function loadDiffData() {
+	const diffJsonPath = path.resolve("diff.json");
+	if (fs.existsSync(diffJsonPath)) try {
+		const diffJsonContent = fs.readFileSync(diffJsonPath, "utf-8");
+		const diffData = JSON.parse(diffJsonContent);
+		import_core.info(`Found diff.json file: ${diffJsonPath}`);
+		return diffData;
+	} catch (error$1) {
+		import_core.warning(`Failed to read or parse diff.json: ${error$1}`);
+		return;
+	}
+}
+/**
 * 准备 map/init 请求的数据
 */
-function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
+function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget, diffData) {
+	const branch = extractBranchFromRef(githubInfo.ref);
 	const buildInfo = {
-		workflow: githubInfo.workflow,
-		runId: githubInfo.runId,
-		runAttempt: githubInfo.runAttempt,
-		ref: githubInfo.ref
+		provider: "github_actions",
+		event: process.env.GITHUB_EVENT_NAME,
+		buildID: githubInfo.runId,
+		branch
 	};
 	return {
 		sha: githubInfo.sha,
@@ -16985,7 +17007,8 @@ function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
 		instrumentCwd,
 		buildTarget: buildTarget || "",
 		build: buildInfo,
-		coverage
+		coverage,
+		...diffData && { diff: diffData }
 	};
 }
 /**
@@ -17017,14 +17040,11 @@ async function run() {
 		const instrumentCwd = import_core.getInput("instrument-cwd", { required: true });
 		const buildTarget = import_core.getInput("build-target") || "";
 		const githubInfo = getGitHubInfo();
-		Object.entries(githubInfo).forEach((item) => {
-			console.log(`key:${item[0]},value:${item[1]}`);
-		});
 		import_core.info(`Loading coverage file: ${coverageFile}`);
 		const coverage = loadCoverageFile(coverageFile);
 		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in file");
 		import_core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
-		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget);
+		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget, loadDiffData());
 		import_core.info("Uploading coverage map initialization...");
 		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
 		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
