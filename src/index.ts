@@ -220,8 +220,11 @@ async function run() {
     const coverageFile = core.getInput('coverage-file', { required: true });
     const canyonUrl = core.getInput('canyon-url', { required: true });
     const canyonToken = core.getInput('canyon-token');
-    const instrumentCwd = core.getInput('instrument-cwd', { required: true });
+    const instrumentCwdInput = core.getInput('instrument-cwd');
+    const instrumentCwd = instrumentCwdInput || process.cwd();
     const buildTarget = core.getInput('build-target') || '';
+
+    core.info(`Instrument CWD: ${instrumentCwd}`);
 
     const githubInfo = getGitHubInfo();
     core.info(`Loading coverage file: ${coverageFile}`);

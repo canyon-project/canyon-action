@@ -14,8 +14,8 @@ inputs:
     description: 'Canyon authentication token (optional)'
     required: false
   instrument-cwd:
-    description: 'Instrumentation working directory (instrumentCwd)'
-    required: true
+    description: 'Instrumentation working directory (instrumentCwd). Defaults to current working directory if not provided'
+    required: false
   build-target:
     description: 'Build target (optional)'
     required: false
