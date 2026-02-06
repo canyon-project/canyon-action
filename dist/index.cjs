@@ -17002,10 +17002,14 @@ function loadCoverageFile(filePath) {
 }
 /**
 * 读取 diff.json 文件（如果存在）
+* diff.json 路径相对于 coverage 文件的父目录
+* 例如：coverage 在 web/coverage/coverage-final.json，diff.json 在 web/diff.json
 */
-function loadDiffData() {
-	const diffJsonPath = path.resolve("diff.json");
-	import_core.info(`Checking for diff.json file at:${diffJsonPath}`);
+function loadDiffData(coverageFilePath) {
+	const coverageFullPath = path.resolve(coverageFilePath);
+	const coverageDir = path.dirname(coverageFullPath);
+	const diffJsonPath = path.join(path.dirname(coverageDir), "diff.json");
+	import_core.info(`Checking for diff.json file at: ${diffJsonPath}`);
 	if (fs.existsSync(diffJsonPath)) try {
 		const diffJsonContent = fs.readFileSync(diffJsonPath, "utf-8");
 		const diffData = JSON.parse(diffJsonContent);
@@ -17079,7 +17083,7 @@ async function run() {
 		const coverage = loadCoverageFile(coverageFile);
 		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in file");
 		import_core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
-		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget, loadDiffData());
+		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget, loadDiffData(coverageFile));
 		import_core.info("Uploading coverage map initialization...");
 		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
 		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
