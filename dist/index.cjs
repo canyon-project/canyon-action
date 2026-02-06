@@ -17076,8 +17076,9 @@ async function run() {
 		const coverageFile = import_core.getInput("coverage-file", { required: true });
 		const canyonUrl = import_core.getInput("canyon-url", { required: true });
 		const canyonToken = import_core.getInput("canyon-token");
-		const instrumentCwd = import_core.getInput("instrument-cwd", { required: true });
+		const instrumentCwd = import_core.getInput("instrument-cwd") || process.cwd();
 		const buildTarget = import_core.getInput("build-target") || "";
+		import_core.info(`Instrument CWD: ${instrumentCwd}`);
 		const githubInfo = getGitHubInfo();
 		import_core.info(`Loading coverage file: ${coverageFile}`);
 		const coverage = loadCoverageFile(coverageFile);
