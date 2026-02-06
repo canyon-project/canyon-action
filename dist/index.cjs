@@ -17005,6 +17005,7 @@ function loadCoverageFile(filePath) {
 */
 function loadDiffData() {
 	const diffJsonPath = path.resolve("diff.json");
+	import_core.info(`Checking for diff.json file at:${diffJsonPath}`);
 	if (fs.existsSync(diffJsonPath)) try {
 		const diffJsonContent = fs.readFileSync(diffJsonPath, "utf-8");
 		const diffData = JSON.parse(diffJsonContent);
