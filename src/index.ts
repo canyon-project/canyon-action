@@ -97,10 +97,15 @@ function loadCoverageFile(filePath: string): any {
 
 /**
  * 读取 diff.json 文件（如果存在）
+ * diff.json 路径相对于 coverage 文件的父目录
+ * 例如：coverage 在 web/coverage/coverage-final.json，diff.json 在 web/diff.json
  */
-function loadDiffData(): any | undefined {
-  const diffJsonPath = path.resolve('diff.json');
-  core.info(`Checking for diff.json file at:${diffJsonPath}`);
+function loadDiffData(coverageFilePath: string): any | undefined {
+  const coverageFullPath = path.resolve(coverageFilePath);
+  const coverageDir = path.dirname(coverageFullPath);
+  // diff.json 在 coverage 文件的父目录
+  const diffJsonPath = path.join(path.dirname(coverageDir), 'diff.json');
+  core.info(`Checking for diff.json file at: ${diffJsonPath}`);
   if (fs.existsSync(diffJsonPath)) {
     try {
       const diffJsonContent = fs.readFileSync(diffJsonPath, 'utf-8');
@@ -228,8 +233,8 @@ async function run() {
 
     core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
 
-    // 尝试读取 diff.json 文件
-    const diffData = loadDiffData();
+    // 尝试读取 diff.json 文件（相对于 coverage 文件）
+    const diffData = loadDiffData(coverageFile);
 
     // 准备 map/init 数据
     const mapInitData = prepareMapInitData(
