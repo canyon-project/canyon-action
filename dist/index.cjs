@@ -28,6 +28,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 //#endregion
 let fs = require("fs");
 fs = __toESM(fs);
+let path = require("path");
+path = __toESM(path);
 let child_process = require("child_process");
 
 //#region node_modules/.pnpm/@actions+core@1.11.1/node_modules/@actions/core/lib/utils.js
@@ -913,10 +915,10 @@ var require_util$6 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			if (url.origin != null && typeof url.origin !== "string") throw new InvalidArgumentError$21("Invalid URL origin: the origin must be a string or null/undefined.");
 			const port = url.port != null ? url.port : url.protocol === "https:" ? 443 : 80;
 			let origin = url.origin != null ? url.origin : `${url.protocol}//${url.hostname}:${port}`;
-			let path$5 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
+			let path$6 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
 			if (origin.endsWith("/")) origin = origin.substring(0, origin.length - 1);
-			if (path$5 && !path$5.startsWith("/")) path$5 = `/${path$5}`;
-			url = new URL(origin + path$5);
+			if (path$6 && !path$6.startsWith("/")) path$6 = `/${path$6}`;
+			url = new URL(origin + path$6);
 		}
 		return url;
 	}
@@ -2286,15 +2288,15 @@ var require_parseParams = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#endregion
 //#region node_modules/.pnpm/@fastify+busboy@2.1.1/node_modules/@fastify/busboy/lib/utils/basename.js
 var require_basename = /* @__PURE__ */ __commonJSMin(((exports, module) => {
-	module.exports = function basename$1(path$5) {
-		if (typeof path$5 !== "string") return "";
-		for (var i = path$5.length - 1; i >= 0; --i) switch (path$5.charCodeAt(i)) {
+	module.exports = function basename$1(path$6) {
+		if (typeof path$6 !== "string") return "";
+		for (var i = path$6.length - 1; i >= 0; --i) switch (path$6.charCodeAt(i)) {
 			case 47:
 			case 92:
-				path$5 = path$5.slice(i + 1);
-				return path$5 === ".." || path$5 === "." ? "" : path$5;
+				path$6 = path$6.slice(i + 1);
+				return path$6 === ".." || path$6 === "." ? "" : path$6;
 		}
-		return path$5 === ".." || path$5 === "." ? "" : path$5;
+		return path$6 === ".." || path$6 === "." ? "" : path$6;
 	};
 }));
 
@@ -4944,10 +4946,10 @@ var require_request$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		channels$3.error = { hasSubscribers: false };
 	}
 	var Request$4 = class Request$4 {
-		constructor(origin, { path: path$5, method, body, headers, query, idempotent, blocking, upgrade: upgrade$1, headersTimeout, bodyTimeout, reset, throwOnError, expectContinue }, handler) {
-			if (typeof path$5 !== "string") throw new InvalidArgumentError$20("path must be a string");
-			else if (path$5[0] !== "/" && !(path$5.startsWith("http://") || path$5.startsWith("https://")) && method !== "CONNECT") throw new InvalidArgumentError$20("path must be an absolute URL or start with a slash");
-			else if (invalidPathRegex.exec(path$5) !== null) throw new InvalidArgumentError$20("invalid request path");
+		constructor(origin, { path: path$6, method, body, headers, query, idempotent, blocking, upgrade: upgrade$1, headersTimeout, bodyTimeout, reset, throwOnError, expectContinue }, handler) {
+			if (typeof path$6 !== "string") throw new InvalidArgumentError$20("path must be a string");
+			else if (path$6[0] !== "/" && !(path$6.startsWith("http://") || path$6.startsWith("https://")) && method !== "CONNECT") throw new InvalidArgumentError$20("path must be an absolute URL or start with a slash");
+			else if (invalidPathRegex.exec(path$6) !== null) throw new InvalidArgumentError$20("invalid request path");
 			if (typeof method !== "string") throw new InvalidArgumentError$20("method must be a string");
 			else if (tokenRegExp.exec(method) === null) throw new InvalidArgumentError$20("invalid request method");
 			if (upgrade$1 && typeof upgrade$1 !== "string") throw new InvalidArgumentError$20("upgrade must be a string");
@@ -4984,7 +4986,7 @@ var require_request$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			this.completed = false;
 			this.aborted = false;
 			this.upgrade = upgrade$1 || null;
-			this.path = query ? util$15.buildURL(path$5, query) : path$5;
+			this.path = query ? util$15.buildURL(path$6, query) : path$6;
 			this.origin = origin;
 			this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
 			this.blocking = blocking == null ? false : blocking;
@@ -5876,9 +5878,9 @@ var require_RedirectHandler = /* @__PURE__ */ __commonJSMin(((exports, module) =
 			if (this.opts.origin) this.history.push(new URL(this.opts.path, this.opts.origin));
 			if (!this.location) return this.handler.onHeaders(statusCode, headers, resume$1, statusText);
 			const { origin, pathname, search } = util$13.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-			const path$5 = search ? `${pathname}${search}` : pathname;
+			const path$6 = search ? `${pathname}${search}` : pathname;
 			this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin);
-			this.opts.path = path$5;
+			this.opts.path = path$6;
 			this.opts.origin = origin;
 			this.opts.maxRedirections = 0;
 			this.opts.query = null;
@@ -6818,7 +6820,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			writeH2(client, client[kHTTP2Session], request$1);
 			return;
 		}
-		const { body, method, path: path$5, host, upgrade: upgrade$1, headers, blocking, reset } = request$1;
+		const { body, method, path: path$6, host, upgrade: upgrade$1, headers, blocking, reset } = request$1;
 		const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
 		if (body && typeof body.read === "function") body.read(0);
 		const bodyLength$1 = util$12.bodyLength(body);
@@ -6848,7 +6850,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		if (reset != null) socket[kReset] = reset;
 		if (client[kMaxRequests] && socket[kCounter]++ >= client[kMaxRequests]) socket[kReset] = true;
 		if (blocking) socket[kBlocking] = true;
-		let header = `${method} ${path$5} HTTP/1.1\r\n`;
+		let header = `${method} ${path$6} HTTP/1.1\r\n`;
 		if (typeof host === "string") header += `host: ${host}\r\n`;
 		else header += client[kHostHeader];
 		if (upgrade$1) header += `connection: upgrade\r\nupgrade: ${upgrade$1}\r\n`;
@@ -6917,7 +6919,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		return true;
 	}
 	function writeH2(client, session, request$1) {
-		const { body, method, path: path$5, host, upgrade: upgrade$1, expectContinue, signal, headers: reqHeaders } = request$1;
+		const { body, method, path: path$6, host, upgrade: upgrade$1, expectContinue, signal, headers: reqHeaders } = request$1;
 		let headers;
 		if (typeof reqHeaders === "string") headers = Request$3[kHTTP2CopyHeaders](reqHeaders.trim());
 		else headers = reqHeaders;
@@ -6958,7 +6960,7 @@ var require_client = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			});
 			return true;
 		}
-		headers[HTTP2_HEADER_PATH] = path$5;
+		headers[HTTP2_HEADER_PATH] = path$6;
 		headers[HTTP2_HEADER_SCHEME] = "https";
 		const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
 		if (body && typeof body.read === "function") body.read(0);
@@ -8762,16 +8764,16 @@ var require_mock_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		for (const [matchHeaderName, matchHeaderValue] of Object.entries(mockDispatch$1.headers)) if (!matchValue$1(matchHeaderValue, getHeaderByName(headers, matchHeaderName))) return false;
 		return true;
 	}
-	function safeUrl(path$5) {
-		if (typeof path$5 !== "string") return path$5;
-		const pathSegments = path$5.split("?");
-		if (pathSegments.length !== 2) return path$5;
+	function safeUrl(path$6) {
+		if (typeof path$6 !== "string") return path$6;
+		const pathSegments = path$6.split("?");
+		if (pathSegments.length !== 2) return path$6;
 		const qp = new URLSearchParams(pathSegments.pop());
 		qp.sort();
 		return [...pathSegments, qp.toString()].join("?");
 	}
-	function matchKey(mockDispatch$1, { path: path$5, method, body, headers }) {
-		const pathMatch = matchValue$1(mockDispatch$1.path, path$5);
+	function matchKey(mockDispatch$1, { path: path$6, method, body, headers }) {
+		const pathMatch = matchValue$1(mockDispatch$1.path, path$6);
 		const methodMatch = matchValue$1(mockDispatch$1.method, method);
 		const bodyMatch = typeof mockDispatch$1.body !== "undefined" ? matchValue$1(mockDispatch$1.body, body) : true;
 		const headersMatch = matchHeaders(mockDispatch$1, headers);
@@ -8785,7 +8787,7 @@ var require_mock_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	function getMockDispatch(mockDispatches, key) {
 		const basePath = key.query ? buildURL$1(key.path, key.query) : key.path;
 		const resolvedPath = typeof basePath === "string" ? safeUrl(basePath) : basePath;
-		let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path$5 }) => matchValue$1(safeUrl(path$5), resolvedPath));
+		let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path$6 }) => matchValue$1(safeUrl(path$6), resolvedPath));
 		if (matchedMockDispatches.length === 0) throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath}'`);
 		matchedMockDispatches = matchedMockDispatches.filter(({ method }) => matchValue$1(method, key.method));
 		if (matchedMockDispatches.length === 0) throw new MockNotMatchedError(`Mock dispatch not matched for method '${key.method}'`);
@@ -8823,9 +8825,9 @@ var require_mock_utils = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		if (index !== -1) mockDispatches.splice(index, 1);
 	}
 	function buildKey$1(opts) {
-		const { path: path$5, method, body, headers, query } = opts;
+		const { path: path$6, method, body, headers, query } = opts;
 		return {
-			path: path$5,
+			path: path$6,
 			method,
 			body,
 			headers,
@@ -9219,10 +9221,10 @@ var require_pending_interceptors_formatter = /* @__PURE__ */ __commonJSMin(((exp
 			});
 		}
 		format(pendingInterceptors) {
-			const withPrettyHeaders = pendingInterceptors.map(({ method, path: path$5, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
+			const withPrettyHeaders = pendingInterceptors.map(({ method, path: path$6, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
 				Method: method,
 				Origin: origin,
-				Path: path$5,
+				Path: path$6,
 				"Status code": statusCode,
 				Persistent: persist ? "✅" : "❌",
 				Invocations: timesInvoked,
@@ -10857,7 +10859,7 @@ var require_fetch = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			this.emit("terminated", error$1);
 		}
 	};
-	function fetch(input, init = {}) {
+	function fetch$1(input, init = {}) {
 		webidl$7.argumentLengthCheck(arguments, 1, { header: "globalThis.fetch" });
 		const p = createDeferredPromise$1();
 		let requestObject;
@@ -11476,7 +11478,7 @@ var require_fetch = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 		}
 	}
 	module.exports = {
-		fetch,
+		fetch: fetch$1,
 		Fetch,
 		fetching: fetching$2,
 		finalizeAndReportTiming
@@ -12831,8 +12833,8 @@ var require_util$1 = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	* path-value        = <any CHAR except CTLs or ";">
 	* @param {string} path
 	*/
-	function validateCookiePath(path$5) {
-		for (const char of path$5) if (char.charCodeAt(0) < 33 || char === ";") throw new Error("Invalid cookie path");
+	function validateCookiePath(path$6) {
+		for (const char of path$6) if (char.charCodeAt(0) < 33 || char === ";") throw new Error("Invalid cookie path");
 	}
 	/**
 	* I have no idea why these values aren't allowed to be honest,
@@ -14372,9 +14374,9 @@ var require_undici = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 			if (opts != null && typeof opts !== "object") throw new InvalidArgumentError("invalid opts");
 			if (opts && opts.path != null) {
 				if (typeof opts.path !== "string") throw new InvalidArgumentError("invalid opts.path");
-				let path$5 = opts.path;
-				if (!opts.path.startsWith("/")) path$5 = `/${path$5}`;
-				url = new URL(util.parseOrigin(url).origin + path$5);
+				let path$6 = opts.path;
+				if (!opts.path.startsWith("/")) path$6 = `/${path$6}`;
+				url = new URL(util.parseOrigin(url).origin + path$6);
 			} else {
 				if (!opts) opts = typeof url === "object" ? url : {};
 				url = util.parseURL(url);
@@ -14393,7 +14395,7 @@ var require_undici = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports.getGlobalDispatcher = getGlobalDispatcher;
 	if (util.nodeMajor > 16 || util.nodeMajor === 16 && util.nodeMinor >= 8) {
 		let fetchImpl = null;
-		module.exports.fetch = async function fetch$1(resource) {
+		module.exports.fetch = async function fetch$2(resource) {
 			if (!fetchImpl) fetchImpl = require_fetch().fetch;
 			try {
 				return await fetchImpl(...arguments);
@@ -15482,7 +15484,7 @@ var require_path_utils = /* @__PURE__ */ __commonJSMin(((exports) => {
 	};
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.toPlatformPath = exports.toWin32Path = exports.toPosixPath = void 0;
-	const path$4 = __importStar$6(require("path"));
+	const path$5 = __importStar$6(require("path"));
 	/**
 	* toPosixPath converts the given path to the posix form. On Windows, \\ will be
 	* replaced with /.
@@ -15514,7 +15516,7 @@ var require_path_utils = /* @__PURE__ */ __commonJSMin(((exports) => {
 	* @return string The platform-specific path.
 	*/
 	function toPlatformPath(pth) {
-		return pth.replace(/[/\\]/g, path$4.sep);
+		return pth.replace(/[/\\]/g, path$5.sep);
 	}
 	exports.toPlatformPath = toPlatformPath;
 }));
@@ -15582,7 +15584,7 @@ var require_io_util = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.getCmdPath = exports.tryGetExecutablePath = exports.isRooted = exports.isDirectory = exports.exists = exports.READONLY = exports.UV_FS_O_EXLOCK = exports.IS_WINDOWS = exports.unlink = exports.symlink = exports.stat = exports.rmdir = exports.rm = exports.rename = exports.readlink = exports.readdir = exports.open = exports.mkdir = exports.lstat = exports.copyFile = exports.chmod = void 0;
 	const fs$1 = __importStar$5(require("fs"));
-	const path$3 = __importStar$5(require("path"));
+	const path$4 = __importStar$5(require("path"));
 	_a = fs$1.promises, exports.chmod = _a.chmod, exports.copyFile = _a.copyFile, exports.lstat = _a.lstat, exports.mkdir = _a.mkdir, exports.open = _a.open, exports.readdir = _a.readdir, exports.readlink = _a.readlink, exports.rename = _a.rename, exports.rm = _a.rm, exports.rmdir = _a.rmdir, exports.stat = _a.stat, exports.symlink = _a.symlink, exports.unlink = _a.unlink;
 	exports.IS_WINDOWS = process.platform === "win32";
 	exports.UV_FS_O_EXLOCK = 268435456;
@@ -15632,7 +15634,7 @@ var require_io_util = /* @__PURE__ */ __commonJSMin(((exports) => {
 			}
 			if (stats && stats.isFile()) {
 				if (exports.IS_WINDOWS) {
-					const upperExt = path$3.extname(filePath).toUpperCase();
+					const upperExt = path$4.extname(filePath).toUpperCase();
 					if (extensions.some((validExt) => validExt.toUpperCase() === upperExt)) return filePath;
 				} else if (isUnixExecutable(stats)) return filePath;
 			}
@@ -15648,10 +15650,10 @@ var require_io_util = /* @__PURE__ */ __commonJSMin(((exports) => {
 				if (stats && stats.isFile()) {
 					if (exports.IS_WINDOWS) {
 						try {
-							const directory = path$3.dirname(filePath);
-							const upperName = path$3.basename(filePath).toUpperCase();
+							const directory = path$4.dirname(filePath);
+							const upperName = path$4.basename(filePath).toUpperCase();
 							for (const actualName of yield exports.readdir(directory)) if (upperName === actualName.toUpperCase()) {
-								filePath = path$3.join(directory, actualName);
+								filePath = path$4.join(directory, actualName);
 								break;
 							}
 						} catch (err) {
@@ -15745,7 +15747,7 @@ var require_io = /* @__PURE__ */ __commonJSMin(((exports) => {
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.findInPath = exports.which = exports.mkdirP = exports.rmRF = exports.mv = exports.cp = void 0;
 	const assert_1 = require("assert");
-	const path$2 = __importStar$4(require("path"));
+	const path$3 = __importStar$4(require("path"));
 	const ioUtil$1 = __importStar$4(require_io_util());
 	/**
 	* Copies a file or folder.
@@ -15760,12 +15762,12 @@ var require_io = /* @__PURE__ */ __commonJSMin(((exports) => {
 			const { force, recursive, copySourceDirectory } = readCopyOptions(options);
 			const destStat = (yield ioUtil$1.exists(dest)) ? yield ioUtil$1.stat(dest) : null;
 			if (destStat && destStat.isFile() && !force) return;
-			const newDest = destStat && destStat.isDirectory() && copySourceDirectory ? path$2.join(dest, path$2.basename(source)) : dest;
+			const newDest = destStat && destStat.isDirectory() && copySourceDirectory ? path$3.join(dest, path$3.basename(source)) : dest;
 			if (!(yield ioUtil$1.exists(source))) throw new Error(`no such file or directory: ${source}`);
 			if ((yield ioUtil$1.stat(source)).isDirectory()) if (!recursive) throw new Error(`Failed to copy. ${source} is a directory, but tried to copy without recursive flag.`);
 			else yield cpDirRecursive(source, newDest, 0, force);
 			else {
-				if (path$2.relative(source, newDest) === "") throw new Error(`'${newDest}' and '${source}' are the same file`);
+				if (path$3.relative(source, newDest) === "") throw new Error(`'${newDest}' and '${source}' are the same file`);
 				yield copyFile(source, newDest, force);
 			}
 		});
@@ -15783,13 +15785,13 @@ var require_io = /* @__PURE__ */ __commonJSMin(((exports) => {
 			if (yield ioUtil$1.exists(dest)) {
 				let destExists = true;
 				if (yield ioUtil$1.isDirectory(dest)) {
-					dest = path$2.join(dest, path$2.basename(source));
+					dest = path$3.join(dest, path$3.basename(source));
 					destExists = yield ioUtil$1.exists(dest);
 				}
 				if (destExists) if (options.force == null || options.force) yield rmRF(dest);
 				else throw new Error("Destination already exists");
 			}
-			yield mkdirP(path$2.dirname(dest));
+			yield mkdirP(path$3.dirname(dest));
 			yield ioUtil$1.rename(source, dest);
 		});
 	}
@@ -15864,21 +15866,21 @@ var require_io = /* @__PURE__ */ __commonJSMin(((exports) => {
 			if (!tool) throw new Error("parameter 'tool' is required");
 			const extensions = [];
 			if (ioUtil$1.IS_WINDOWS && process.env["PATHEXT"]) {
-				for (const extension of process.env["PATHEXT"].split(path$2.delimiter)) if (extension) extensions.push(extension);
+				for (const extension of process.env["PATHEXT"].split(path$3.delimiter)) if (extension) extensions.push(extension);
 			}
 			if (ioUtil$1.isRooted(tool)) {
 				const filePath = yield ioUtil$1.tryGetExecutablePath(tool, extensions);
 				if (filePath) return [filePath];
 				return [];
 			}
-			if (tool.includes(path$2.sep)) return [];
+			if (tool.includes(path$3.sep)) return [];
 			const directories = [];
 			if (process.env.PATH) {
-				for (const p of process.env.PATH.split(path$2.delimiter)) if (p) directories.push(p);
+				for (const p of process.env.PATH.split(path$3.delimiter)) if (p) directories.push(p);
 			}
 			const matches = [];
 			for (const directory of directories) {
-				const filePath = yield ioUtil$1.tryGetExecutablePath(path$2.join(directory, tool), extensions);
+				const filePath = yield ioUtil$1.tryGetExecutablePath(path$3.join(directory, tool), extensions);
 				if (filePath) matches.push(filePath);
 			}
 			return matches;
@@ -15990,7 +15992,7 @@ var require_toolrunner = /* @__PURE__ */ __commonJSMin(((exports) => {
 	const os$1 = __importStar$3(require("os"));
 	const events = __importStar$3(require("events"));
 	const child = __importStar$3(require("child_process"));
-	const path$1 = __importStar$3(require("path"));
+	const path$2 = __importStar$3(require("path"));
 	const io = __importStar$3(require_io());
 	const ioUtil = __importStar$3(require_io_util());
 	const timers_1 = require("timers");
@@ -16166,7 +16168,7 @@ var require_toolrunner = /* @__PURE__ */ __commonJSMin(((exports) => {
 		*/
 		exec() {
 			return __awaiter$3(this, void 0, void 0, function* () {
-				if (!ioUtil.isRooted(this.toolPath) && (this.toolPath.includes("/") || IS_WINDOWS && this.toolPath.includes("\\"))) this.toolPath = path$1.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
+				if (!ioUtil.isRooted(this.toolPath) && (this.toolPath.includes("/") || IS_WINDOWS && this.toolPath.includes("\\"))) this.toolPath = path$2.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
 				this.toolPath = yield io.which(this.toolPath, true);
 				return new Promise((resolve, reject) => __awaiter$3(this, void 0, void 0, function* () {
 					this._debug(`exec tool: ${this.toolPath}`);
@@ -16636,7 +16638,7 @@ var require_core = /* @__PURE__ */ __commonJSMin(((exports) => {
 	const file_command_1 = require_file_command();
 	const utils_1 = require_utils$1();
 	const os = __importStar(require("os"));
-	const path = __importStar(require("path"));
+	const path$1 = __importStar(require("path"));
 	const oidc_utils_1 = require_oidc_utils();
 	/**
 	* The code to exit an action
@@ -16679,7 +16681,7 @@ var require_core = /* @__PURE__ */ __commonJSMin(((exports) => {
 	function addPath(inputPath) {
 		if (process.env["GITHUB_PATH"] || "") (0, file_command_1.issueFileCommand)("PATH", inputPath);
 		else (0, command_1.issueCommand)("add-path", {}, inputPath);
-		process.env["PATH"] = `${inputPath}${path.delimiter}${process.env["PATH"]}`;
+		process.env["PATH"] = `${inputPath}${path$1.delimiter}${process.env["PATH"]}`;
 	}
 	exports.addPath = addPath;
 	/**
@@ -16937,18 +16939,60 @@ var require_core = /* @__PURE__ */ __commonJSMin(((exports) => {
 //#endregion
 //#region src/index.ts
 var import_core = /* @__PURE__ */ __toESM(require_core());
+/**
+* 从 ref 中提取分支名
+*/
+function extractBranchFromRef(ref) {
+	if (ref.startsWith("refs/heads/")) return ref.replace("refs/heads/", "");
+}
+/**
+* 从 GitHub event 文件中获取 PR head 信息
+*/
+function getPullRequestHeadInfo() {
+	const eventPath = process.env.GITHUB_EVENT_PATH;
+	if (!eventPath || !fs.existsSync(eventPath)) return {};
+	try {
+		const pullRequest = JSON.parse(fs.readFileSync(eventPath, "utf-8")).pull_request;
+		if (pullRequest?.head) return {
+			sha: pullRequest.head.sha,
+			repoID: pullRequest.head.repo?.id?.toString()
+		};
+	} catch (error$1) {
+		import_core.warning(`Failed to parse GitHub event file: ${error$1}`);
+	}
+	return {};
+}
+/**
+* 从 GitHub Actions 环境变量获取仓库信息
+*/
+function getGitHubInfo() {
+	const prHeadInfo = getPullRequestHeadInfo();
+	const repoID = prHeadInfo.repoID || process.env.GITHUB_REPOSITORY_ID || "";
+	const sha = prHeadInfo.sha || process.env.GITHUB_SHA || "";
+	const ref = process.env.GITHUB_REF || "";
+	const workflow = process.env.GITHUB_WORKFLOW || "";
+	const runId = process.env.GITHUB_RUN_ID || "";
+	const runAttempt = process.env.GITHUB_RUN_ATTEMPT || "";
+	if (prHeadInfo.sha || prHeadInfo.repoID) import_core.info(`Using PR head info - sha: ${sha}, repoID: ${repoID}`);
+	return {
+		provider: "github",
+		repoID,
+		sha,
+		ref,
+		workflow,
+		runId,
+		runAttempt
+	};
+}
+/**
+* 获取 PR 变更文件列表（git fetch + git diff）
+*/
 function getChangedFilesInPR() {
 	const eventPath = process.env.GITHUB_EVENT_PATH;
-	if (!eventPath || !fs.existsSync(eventPath)) {
-		import_core.warning("GITHUB_EVENT_PATH not found or not in PR context");
-		return [];
-	}
+	if (!eventPath || !fs.existsSync(eventPath)) return [];
 	try {
 		const pr = JSON.parse(fs.readFileSync(eventPath, "utf-8")).pull_request;
-		if (!pr?.base?.sha || !pr?.head?.sha) {
-			import_core.warning("Not a pull_request event or missing base/head sha");
-			return [];
-		}
+		if (!pr?.base?.sha || !pr?.head?.sha) return [];
 		const { base, head } = {
 			base: pr.base.sha,
 			head: pr.head.sha
@@ -16960,10 +17004,112 @@ function getChangedFilesInPR() {
 		return [];
 	}
 }
-function run() {
-	const files = getChangedFilesInPR();
-	import_core.info(`PR changed files (${files.length}):`);
-	files.forEach((f) => import_core.info(`  - ${f}`));
+/**
+* 用 PR 变更文件过滤 coverage 数据
+*/
+function filterCoverageByChangedFiles(coverage, changedFiles) {
+	if (changedFiles.length === 0) return coverage;
+	const normalizedChanged = new Set(changedFiles.map((f) => f.replace(/\\/g, "/")));
+	const filtered = {};
+	for (const [filePath, data] of Object.entries(coverage)) {
+		const normalized = filePath.replace(/\\/g, "/");
+		if ([...normalizedChanged].some((changed) => normalized === changed || normalized.endsWith("/" + changed))) filtered[filePath] = data;
+	}
+	return filtered;
+}
+/**
+* 读取 coverage 文件
+*/
+function loadCoverageFile(filePath) {
+	const fullPath = path.resolve(filePath.trim());
+	if (!fs.existsSync(fullPath)) throw new Error(`Coverage file not found: ${fullPath}`);
+	try {
+		const content = fs.readFileSync(fullPath, "utf-8");
+		const coverage = JSON.parse(content);
+		import_core.info(`Loaded coverage from: ${fullPath}`);
+		return coverage;
+	} catch (error$1) {
+		import_core.error(`Failed to parse coverage file ${fullPath}: ${error$1}`);
+		throw error$1;
+	}
+}
+/**
+* 准备 map/init 请求的数据
+*/
+function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
+	const branch = extractBranchFromRef(githubInfo.ref);
+	const isGitHubActions = process.env.GITHUB_ACTIONS === "true" || !!process.env.GITHUB_EVENT_PATH;
+	let githubEvent;
+	if (isGitHubActions && process.env.GITHUB_EVENT_PATH) try {
+		if (fs.existsSync(process.env.GITHUB_EVENT_PATH)) githubEvent = fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8");
+	} catch (error$1) {
+		import_core.warning(`Failed to read GITHUB_EVENT_PATH: ${error$1}`);
+	}
+	const buildInfo = {
+		provider: "github_actions",
+		event: githubEvent,
+		buildID: githubInfo.runId,
+		branch
+	};
+	return {
+		sha: githubInfo.sha,
+		provider: githubInfo.provider,
+		repoID: githubInfo.repoID,
+		instrumentCwd,
+		buildTarget: buildTarget || "",
+		build: buildInfo,
+		coverage
+	};
+}
+/**
+* 发送 HTTP 请求
+*/
+async function sendRequest(url, data, token) {
+	const headers = { "Content-Type": "application/json" };
+	if (token) headers["Authorization"] = `Bearer ${token}`;
+	const response = await fetch(url, {
+		method: "POST",
+		headers,
+		body: JSON.stringify(data)
+	});
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+	}
+	return response.json();
+}
+async function run() {
+	const failOnError = import_core.getInput("fail-on-error") === "" ? true : import_core.getBooleanInput("fail-on-error");
+	try {
+		const coverageFile = import_core.getInput("coverage-file", { required: true });
+		const canyonUrl = import_core.getInput("canyon-url", { required: true });
+		const canyonToken = import_core.getInput("canyon-token");
+		const instrumentCwd = import_core.getInput("instrument-cwd") || process.cwd();
+		const buildTarget = import_core.getInput("build-target") || "";
+		import_core.info(`Instrument CWD: ${instrumentCwd}`);
+		const githubInfo = getGitHubInfo();
+		import_core.info(`Loading coverage file: ${coverageFile}`);
+		let coverage = loadCoverageFile(coverageFile);
+		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in file");
+		import_core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
+		const changedFiles = getChangedFilesInPR();
+		if (changedFiles.length > 0) {
+			import_core.info(`PR changed files (${changedFiles.length}):`);
+			changedFiles.forEach((f) => import_core.info(`  - ${f}`));
+			coverage = filterCoverageByChangedFiles(coverage, changedFiles);
+			import_core.info(`Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`);
+		}
+		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget);
+		import_core.info("Uploading coverage map initialization...");
+		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
+		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
+		import_core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
+		import_core.setOutput("build-hash", mapInitResult.buildHash);
+	} catch (error$1) {
+		const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
+		import_core.error(errorMessage);
+		if (failOnError) import_core.setFailed(errorMessage);
+	}
 }
 run();
 
