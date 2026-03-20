@@ -17090,6 +17090,7 @@ async function run() {
 		const canyonToken = import_core.getInput("canyon-token");
 		const instrumentCwd = import_core.getInput("instrument-cwd") || process.cwd();
 		const buildTarget = import_core.getInput("build-target") || "";
+		const onlyChanges = import_core.getInput("only-changes") === "" ? true : import_core.getBooleanInput("only-changes");
 		import_core.info(`Instrument CWD: ${instrumentCwd}`);
 		const githubInfo = getGitHubInfo();
 		import_core.info(`Loading coverage file: ${coverageFile}`);
@@ -17100,8 +17101,10 @@ async function run() {
 		if (changedFiles.length > 0) {
 			import_core.info(`PR changed files (${changedFiles.length}):`);
 			changedFiles.forEach((f) => import_core.info(`  - ${f}`));
-			coverage = filterCoverageByChangedFiles(coverage, changedFiles);
-			import_core.info(`Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`);
+			if (onlyChanges) {
+				coverage = filterCoverageByChangedFiles(coverage, changedFiles);
+				import_core.info(`Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`);
+			} else import_core.info("only-changes=false, uploading full coverage");
 		}
 		if (base && head && githubInfo.repoID) {
 			const diffUrl = `${canyonUrl.replace(/\/$/, "")}/api/source/diff`;
