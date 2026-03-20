@@ -24,6 +24,10 @@ inputs:
     description: 'Fail the action if upload fails'
     required: false
     default: 'true'
+  only-changes:
+    description: 'Only upload coverage for PR changed files. Set to false for full coverage'
+    required: false
+    default: 'true'
 runs:
   using: 'node20'
   main: 'dist/index.cjs'

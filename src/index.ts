@@ -245,6 +245,9 @@ async function run() {
     const instrumentCwdInput = core.getInput('instrument-cwd');
     const instrumentCwd = instrumentCwdInput || process.cwd();
     const buildTarget = core.getInput('build-target') || '';
+    const onlyChangesInput = core.getInput('only-changes');
+    const onlyChanges =
+      onlyChangesInput === '' ? true : core.getBooleanInput('only-changes');
 
     core.info(`Instrument CWD: ${instrumentCwd}`);
 
@@ -258,16 +261,20 @@ async function run() {
 
     core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
 
-    // 获取 PR 变更文件并过滤 coverage
+    // 获取 PR 变更文件，按需过滤 coverage
     const { files: changedFiles, base, head } = getChangedFilesInPR();
     if (changedFiles.length > 0) {
       core.info(`PR changed files (${changedFiles.length}):`);
       changedFiles.forEach((f) => core.info(`  - ${f}`));
 
-      coverage = filterCoverageByChangedFiles(coverage, changedFiles);
-      core.info(
-        `Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`,
-      );
+      if (onlyChanges) {
+        coverage = filterCoverageByChangedFiles(coverage, changedFiles);
+        core.info(
+          `Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`,
+        );
+      } else {
+        core.info('only-changes=false, uploading full coverage');
+      }
     }
 
     // PR 场景下调用 source/diff 接口
