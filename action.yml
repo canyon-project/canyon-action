@@ -1,29 +1,8 @@
-name: 'Canyon Coverage Upload'
-description: 'Upload coverage reports to Canyon'
+name: 'PR Changed Files'
+description: 'Print changed files in the current PR'
 branding:
-  icon: 'upload-cloud'
+  icon: 'file-text'
   color: 'blue'
-inputs:
-  coverage-file:
-    description: 'Path to coverage JSON file'
-    required: true
-  canyon-url:
-    description: 'Canyon server URL'
-    required: true
-  canyon-token:
-    description: 'Canyon authentication token (optional)'
-    required: false
-  instrument-cwd:
-    description: 'Instrumentation working directory (instrumentCwd). Defaults to current working directory if not provided'
-    required: false
-  build-target:
-    description: 'Build target (optional)'
-    required: false
-    default: ''
-  fail-on-error:
-    description: 'Fail the action if upload fails'
-    required: false
-    default: 'true'
 runs:
   using: 'node20'
   main: 'dist/index.cjs'
