@@ -283,6 +283,7 @@ async function run() {
     }
 
     core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
+    core.info(`MapInitResult: ${JSON.stringify(mapInitResult)}`);
 
     core.setOutput('build-hash', mapInitResult.buildHash);
   } catch (error) {
