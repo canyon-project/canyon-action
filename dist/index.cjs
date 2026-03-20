@@ -16949,13 +16949,18 @@ function getChangedFilesInPR() {
 			import_core.warning("Not a pull_request event or missing base/head sha");
 			return [];
 		}
-		return (0, child_process.execSync)(`git diff --name-only ${pr.base.sha}...${pr.head.sha}`, { encoding: "utf-8" }).trim().split("\n").filter(Boolean);
+		const { base, head } = {
+			base: pr.base.sha,
+			head: pr.head.sha
+		};
+		(0, child_process.execSync)(`git fetch origin ${base} ${head}`, { encoding: "utf-8" });
+		return (0, child_process.execSync)(`git diff --name-only ${base}...${head}`, { encoding: "utf-8" }).trim().split("\n").filter(Boolean);
 	} catch (error$1) {
 		import_core.warning(`Failed to get changed files: ${error$1}`);
 		return [];
 	}
 }
-async function run() {
+function run() {
 	const files = getChangedFilesInPR();
 	import_core.info(`PR changed files (${files.length}):`);
 	files.forEach((f) => import_core.info(`  - ${f}`));
