@@ -233,6 +233,36 @@ async function sendRequest(
   return response.json();
 }
 
+/**
+ * 写入 Job Summary（显示在 Actions 运行页面的 Summary 区域）
+ */
+async function writeJobSummary(params: {
+  buildHash: string;
+  changedFiles: string[];
+  coverageEntries: number;
+  onlyChanges: boolean;
+}) {
+  const { buildHash, changedFiles, coverageEntries, onlyChanges } = params;
+
+  const md: string[] = [];
+  md.push('## Canyon Coverage Upload');
+  md.push('');
+  md.push('| Key | Value |');
+  md.push('|:--|:--|');
+  md.push(`| **BuildHash** | \`${buildHash}\` |`);
+  md.push(`| **Coverage entries** | ${coverageEntries}${onlyChanges && changedFiles.length > 0 ? ' _(PR changed files only)_' : ''} |`);
+  if (changedFiles.length > 0) {
+    md.push(`| **PR changed files** | ${changedFiles.length} |`);
+    md.push('');
+    md.push('### Changed files');
+    md.push('');
+    changedFiles.forEach((f) => md.push(`- \`${f}\``));
+  }
+  md.push('');
+
+  await core.summary.addRaw(md.join('\n')).write();
+}
+
 async function run() {
   const failOnErrorInput = core.getInput('fail-on-error');
   const failOnError =
@@ -315,6 +345,18 @@ async function run() {
     core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
 
     core.setOutput('build-hash', mapInitResult.buildHash);
+
+    // 输出到 Job Summary（Actions 运行页面的 Summary 区域）
+    try {
+      await writeJobSummary({
+        buildHash: mapInitResult.buildHash,
+        changedFiles,
+        coverageEntries: Object.keys(coverage).length,
+        onlyChanges,
+      });
+    } catch (e) {
+      core.warning(`Failed to write job summary: ${e}`);
+    }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     core.error(errorMessage);
