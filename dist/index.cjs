@@ -17067,6 +17067,7 @@ function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
 async function sendRequest(url, data, token) {
 	const headers = { "Content-Type": "application/json" };
 	if (token) headers["Authorization"] = `Bearer ${token}`;
+	console.log("data", data);
 	const response = await fetch(url, {
 		method: "POST",
 		headers,
