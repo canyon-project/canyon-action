@@ -17083,25 +17083,47 @@ async function sendRequest(url, data, token) {
 	return response.json();
 }
 /**
+* 生成 Canyon 报告链接
+*/
+function buildReportLinks(params) {
+	const { reportBaseUrl, repository, sha, base, head } = params;
+	const baseUrl = reportBaseUrl.replace(/\/$/, "");
+	const commitUrl = `${baseUrl}/report/-/github/${repository}/commit/${sha}/-`;
+	return {
+		compareUrl: base && head ? `${baseUrl}/report/-/github/${repository}/compare/${base}...${head}/-` : void 0,
+		commitUrl
+	};
+}
+/**
 * 写入 Job Summary（显示在 Actions 运行页面的 Summary 区域）
 */
 async function writeJobSummary(params) {
-	const { buildHash, changedFiles, coverageEntries, onlyChanges } = params;
+	const { buildHash, changedFiles, coverageEntries, onlyChanges, skipped, compareUrl, commitUrl } = params;
 	const md = [];
 	md.push("## Canyon Coverage Upload");
 	md.push("");
-	md.push("| Key | Value |");
-	md.push("|:--|:--|");
-	md.push(`| **BuildHash** | \`${buildHash}\` |`);
-	md.push(`| **Coverage entries** | ${coverageEntries}${onlyChanges && changedFiles.length > 0 ? " _(PR changed files only)_" : ""} |`);
-	if (changedFiles.length > 0) {
-		md.push(`| **PR changed files** | ${changedFiles.length} |`);
+	if (skipped) {
+		md.push("> ⏭️ **Skipped**: No coverage data for changed files, upload skipped.");
 		md.push("");
+	} else if (buildHash) {
+		md.push("| Key | Value |");
+		md.push("|:--|:--|");
+		md.push(`| **BuildHash** | \`${buildHash}\` |`);
+		md.push(`| **Coverage entries** | ${coverageEntries}${onlyChanges && changedFiles.length > 0 ? " _(PR changed files only)_" : ""} |`);
+		if (changedFiles.length > 0) md.push(`| **PR changed files** | ${changedFiles.length} |`);
+		md.push("");
+	}
+	md.push("### Report");
+	md.push("");
+	if (compareUrl) md.push(`- **[Changed files coverage](${compareUrl})**`);
+	md.push(`- **[Full coverage](${commitUrl})**`);
+	md.push("");
+	if (changedFiles.length > 0) {
 		md.push("### Changed files");
 		md.push("");
 		changedFiles.forEach((f) => md.push(`- \`${f}\``));
+		md.push("");
 	}
-	md.push("");
 	await import_core.summary.addRaw(md.join("\n")).write();
 }
 async function run() {
@@ -17113,6 +17135,7 @@ async function run() {
 		const instrumentCwd = import_core.getInput("instrument-cwd") || process.cwd();
 		const buildTarget = import_core.getInput("build-target") || "";
 		const onlyChanges = import_core.getInput("only-changes") === "" ? true : import_core.getBooleanInput("only-changes");
+		const reportUrl = import_core.getInput("report-url") || "https://app.canyonjs.io";
 		import_core.info(`Instrument CWD: ${instrumentCwd}`);
 		const githubInfo = getGitHubInfo();
 		import_core.info(`Loading coverage file: ${coverageFile}`);
@@ -17144,18 +17167,34 @@ async function run() {
 				import_core.warning(`Source diff failed (non-fatal): ${diffError}`);
 			}
 		}
-		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget);
-		import_core.info("Uploading coverage map initialization...");
-		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
-		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
-		import_core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
-		import_core.setOutput("build-hash", mapInitResult.buildHash);
+		const coverageEntries = Object.keys(coverage).length;
+		const { compareUrl, commitUrl } = buildReportLinks({
+			reportBaseUrl: reportUrl,
+			repository: process.env.GITHUB_REPOSITORY || "",
+			sha: githubInfo.sha,
+			base,
+			head
+		});
+		let buildHash;
+		if (coverageEntries === 0) import_core.info("Skipped: No coverage data for changed files, upload skipped.");
+		else {
+			const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget);
+			import_core.info("Uploading coverage map initialization...");
+			const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
+			if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
+			buildHash = mapInitResult.buildHash;
+			import_core.info(`Coverage upload successful. BuildHash: ${buildHash}`);
+			import_core.setOutput("build-hash", buildHash);
+		}
 		try {
 			await writeJobSummary({
-				buildHash: mapInitResult.buildHash,
+				buildHash,
 				changedFiles,
-				coverageEntries: Object.keys(coverage).length,
-				onlyChanges
+				coverageEntries,
+				onlyChanges,
+				skipped: coverageEntries === 0,
+				compareUrl,
+				commitUrl
 			});
 		} catch (e) {
 			import_core.warning(`Failed to write job summary: ${e}`);
