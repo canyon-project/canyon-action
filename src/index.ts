@@ -17,10 +17,14 @@ function getChangedFilesInPR(): string[] {
       return [];
     }
 
-    const output = execSync(
-      `git diff --name-only ${pr.base.sha}...${pr.head.sha}`,
-      { encoding: 'utf-8' },
-    );
+    const { base, head } = { base: pr.base.sha, head: pr.head.sha };
+
+    // 浅克隆下 base/head 可能未拉取，先 fetch 这两个 commit
+    execSync(`git fetch origin ${base} ${head}`, { encoding: 'utf-8' });
+
+    const output = execSync(`git diff --name-only ${base}...${head}`, {
+      encoding: 'utf-8',
+    });
     return output.trim().split('\n').filter(Boolean);
   } catch (error) {
     core.warning(`Failed to get changed files: ${error}`);
@@ -28,7 +32,7 @@ function getChangedFilesInPR(): string[] {
   }
 }
 
-async function run() {
+function run() {
   const files = getChangedFilesInPR();
   core.info(`PR changed files (${files.length}):`);
   files.forEach((f) => core.info(`  - ${f}`));
