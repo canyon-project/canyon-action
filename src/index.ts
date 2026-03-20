@@ -209,12 +209,14 @@ async function sendRequest(
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-
+  console.log('data', data);
   const response = await fetch(url, {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
   });
+
+
 
   if (!response.ok) {
     const errorText = await response.text();
