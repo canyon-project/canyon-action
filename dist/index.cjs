@@ -17082,6 +17082,28 @@ async function sendRequest(url, data, token) {
 	}
 	return response.json();
 }
+/**
+* 写入 Job Summary（显示在 Actions 运行页面的 Summary 区域）
+*/
+async function writeJobSummary(params) {
+	const { buildHash, changedFiles, coverageEntries, onlyChanges } = params;
+	const md = [];
+	md.push("## Canyon Coverage Upload");
+	md.push("");
+	md.push("| Key | Value |");
+	md.push("|:--|:--|");
+	md.push(`| **BuildHash** | \`${buildHash}\` |`);
+	md.push(`| **Coverage entries** | ${coverageEntries}${onlyChanges && changedFiles.length > 0 ? " _(PR changed files only)_" : ""} |`);
+	if (changedFiles.length > 0) {
+		md.push(`| **PR changed files** | ${changedFiles.length} |`);
+		md.push("");
+		md.push("### Changed files");
+		md.push("");
+		changedFiles.forEach((f) => md.push(`- \`${f}\``));
+	}
+	md.push("");
+	await import_core.summary.addRaw(md.join("\n")).write();
+}
 async function run() {
 	const failOnError = import_core.getInput("fail-on-error") === "" ? true : import_core.getBooleanInput("fail-on-error");
 	try {
@@ -17128,6 +17150,16 @@ async function run() {
 		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
 		import_core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
 		import_core.setOutput("build-hash", mapInitResult.buildHash);
+		try {
+			await writeJobSummary({
+				buildHash: mapInitResult.buildHash,
+				changedFiles,
+				coverageEntries: Object.keys(coverage).length,
+				onlyChanges
+			});
+		} catch (e) {
+			import_core.warning(`Failed to write job summary: ${e}`);
+		}
 	} catch (error$1) {
 		const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
 		import_core.error(errorMessage);
