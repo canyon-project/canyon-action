@@ -16985,23 +16985,27 @@ function getGitHubInfo() {
 	};
 }
 /**
-* 获取 PR 变更文件列表（git fetch + git diff）
+* 获取 PR 变更文件列表及 base/head sha（git fetch + git diff）
 */
 function getChangedFilesInPR() {
 	const eventPath = process.env.GITHUB_EVENT_PATH;
-	if (!eventPath || !fs.existsSync(eventPath)) return [];
+	if (!eventPath || !fs.existsSync(eventPath)) return { files: [] };
 	try {
 		const pr = JSON.parse(fs.readFileSync(eventPath, "utf-8")).pull_request;
-		if (!pr?.base?.sha || !pr?.head?.sha) return [];
+		if (!pr?.base?.sha || !pr?.head?.sha) return { files: [] };
 		const { base, head } = {
 			base: pr.base.sha,
 			head: pr.head.sha
 		};
 		(0, child_process.execSync)(`git fetch origin ${base} ${head}`, { encoding: "utf-8" });
-		return (0, child_process.execSync)(`git diff --name-only ${base}...${head}`, { encoding: "utf-8" }).trim().split("\n").filter(Boolean);
+		return {
+			files: (0, child_process.execSync)(`git diff --name-only ${base}...${head}`, { encoding: "utf-8" }).trim().split("\n").filter(Boolean),
+			base,
+			head
+		};
 	} catch (error$1) {
 		import_core.warning(`Failed to get changed files: ${error$1}`);
-		return [];
+		return { files: [] };
 	}
 }
 /**
@@ -17067,7 +17071,6 @@ function prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget) {
 async function sendRequest(url, data, token) {
 	const headers = { "Content-Type": "application/json" };
 	if (token) headers["Authorization"] = `Bearer ${token}`;
-	console.log("data", data);
 	const response = await fetch(url, {
 		method: "POST",
 		headers,
@@ -17093,19 +17096,34 @@ async function run() {
 		let coverage = loadCoverageFile(coverageFile);
 		if (Object.keys(coverage).length === 0) throw new Error("No coverage data found in file");
 		import_core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
-		const changedFiles = getChangedFilesInPR();
+		const { files: changedFiles, base, head } = getChangedFilesInPR();
 		if (changedFiles.length > 0) {
 			import_core.info(`PR changed files (${changedFiles.length}):`);
 			changedFiles.forEach((f) => import_core.info(`  - ${f}`));
 			coverage = filterCoverageByChangedFiles(coverage, changedFiles);
 			import_core.info(`Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`);
 		}
+		if (base && head && githubInfo.repoID) {
+			const diffUrl = `${canyonUrl.replace(/\/$/, "")}/api/source/diff`;
+			const diffPayload = {
+				repoID: githubInfo.repoID,
+				provider: "github",
+				subject: "compare",
+				subjectID: `${base}...${head}`
+			};
+			import_core.info(`Calling source/diff: ${JSON.stringify(diffPayload)}`);
+			try {
+				await sendRequest(diffUrl, diffPayload, canyonToken);
+				import_core.info("Source diff registered successfully");
+			} catch (diffError) {
+				import_core.warning(`Source diff failed (non-fatal): ${diffError}`);
+			}
+		}
 		const mapInitData = prepareMapInitData(coverage, githubInfo, instrumentCwd, buildTarget);
 		import_core.info("Uploading coverage map initialization...");
 		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
 		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
 		import_core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
-		import_core.info(`MapInitResult: ${JSON.stringify(mapInitResult)}`);
 		import_core.setOutput("build-hash", mapInitResult.buildHash);
 	} catch (error$1) {
 		const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
