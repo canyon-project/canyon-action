@@ -17105,6 +17105,7 @@ async function run() {
 		const mapInitResult = await sendRequest(`${canyonUrl.replace(/\/$/, "")}/api/coverage/map/init`, mapInitData, canyonToken);
 		if (!mapInitResult.success) throw new Error(`Map init failed: ${mapInitResult.message || "Unknown error"}`);
 		import_core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
+		import_core.info(`MapInitResult: ${JSON.stringify(mapInitResult)}`);
 		import_core.setOutput("build-hash", mapInitResult.buildHash);
 	} catch (error$1) {
 		const errorMessage = error$1 instanceof Error ? error$1.message : String(error$1);
