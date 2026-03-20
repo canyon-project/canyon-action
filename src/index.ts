@@ -71,19 +71,23 @@ function getGitHubInfo() {
 }
 
 /**
- * 获取 PR 变更文件列表（git fetch + git diff）
+ * 获取 PR 变更文件列表及 base/head sha（git fetch + git diff）
  */
-function getChangedFilesInPR(): string[] {
+function getChangedFilesInPR(): {
+  files: string[];
+  base?: string;
+  head?: string;
+} {
   const eventPath = process.env.GITHUB_EVENT_PATH;
   if (!eventPath || !fs.existsSync(eventPath)) {
-    return [];
+    return { files: [] };
   }
 
   try {
     const event = JSON.parse(fs.readFileSync(eventPath, 'utf-8'));
     const pr = event.pull_request;
     if (!pr?.base?.sha || !pr?.head?.sha) {
-      return [];
+      return { files: [] };
     }
 
     const { base, head } = { base: pr.base.sha, head: pr.head.sha };
@@ -93,10 +97,11 @@ function getChangedFilesInPR(): string[] {
     const output = execSync(`git diff --name-only ${base}...${head}`, {
       encoding: 'utf-8',
     });
-    return output.trim().split('\n').filter(Boolean);
+    const files = output.trim().split('\n').filter(Boolean);
+    return { files, base, head };
   } catch (error) {
     core.warning(`Failed to get changed files: ${error}`);
-    return [];
+    return { files: [] };
   }
 }
 
@@ -209,7 +214,7 @@ async function sendRequest(
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  console.log('data', data);
+
   const response = await fetch(url, {
     method: 'POST',
     headers,
@@ -254,7 +259,7 @@ async function run() {
     core.info(`Loaded ${Object.keys(coverage).length} coverage entries`);
 
     // 获取 PR 变更文件并过滤 coverage
-    const changedFiles = getChangedFilesInPR();
+    const { files: changedFiles, base, head } = getChangedFilesInPR();
     if (changedFiles.length > 0) {
       core.info(`PR changed files (${changedFiles.length}):`);
       changedFiles.forEach((f) => core.info(`  - ${f}`));
@@ -263,6 +268,24 @@ async function run() {
       core.info(
         `Filtered to ${Object.keys(coverage).length} coverage entries (PR changed files only)`,
       );
+    }
+
+    // PR 场景下调用 source/diff 接口
+    if (base && head && githubInfo.repoID) {
+      const diffUrl = `${canyonUrl.replace(/\/$/, '')}/api/source/diff`;
+      const diffPayload = {
+        repoID: githubInfo.repoID,
+        provider: 'github',
+        subject: 'compare',
+        subjectID: `${base}...${head}`,
+      };
+      core.info(`Calling source/diff: ${JSON.stringify(diffPayload)}`);
+      try {
+        await sendRequest(diffUrl, diffPayload, canyonToken);
+        core.info('Source diff registered successfully');
+      } catch (diffError) {
+        core.warning(`Source diff failed (non-fatal): ${diffError}`);
+      }
     }
 
     const mapInitData = prepareMapInitData(
@@ -283,7 +306,6 @@ async function run() {
     }
 
     core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
-    core.info(`MapInitResult: ${JSON.stringify(mapInitResult)}`);
 
     core.setOutput('build-hash', mapInitResult.buildHash);
   } catch (error) {
