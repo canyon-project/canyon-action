@@ -19,8 +19,13 @@ function extractBranchFromRef(ref: string): string | undefined {
 
 /**
  * 从 GitHub event 文件中获取 PR head 信息
+ * head 仓库即 PR 来源（fork），如 travzhang/rstest -> web-infra-dev/rstest 时取 travzhang/rstest
  */
-function getPullRequestHeadInfo(): { sha?: string; repoID?: string } {
+function getPullRequestHeadInfo(): {
+  sha?: string;
+  repoID?: string;
+  repository?: string;
+} {
   const eventPath = process.env.GITHUB_EVENT_PATH;
   if (!eventPath || !fs.existsSync(eventPath)) {
     return {};
@@ -29,10 +34,13 @@ function getPullRequestHeadInfo(): { sha?: string; repoID?: string } {
   try {
     const event = JSON.parse(fs.readFileSync(eventPath, 'utf-8'));
     const pullRequest = event.pull_request;
-    if (pullRequest?.head) {
+    if (pullRequest?.head?.repo) {
+      const repo = pullRequest.head.repo;
+      const repository = repo.full_name || (repo.owner?.login && repo.name ? `${repo.owner.login}/${repo.name}` : undefined);
       return {
         sha: pullRequest.head.sha,
-        repoID: pullRequest.head.repo?.id?.toString(),
+        repoID: repo.id?.toString(),
+        repository,
       };
     }
   } catch (error) {
@@ -54,9 +62,11 @@ function getGitHubInfo() {
   const workflow = process.env.GITHUB_WORKFLOW || '';
   const runId = process.env.GITHUB_RUN_ID || '';
   const runAttempt = process.env.GITHUB_RUN_ATTEMPT || '';
+  // PR 时用 head 仓库（fork），否则用当前仓库
+  const repository = prHeadInfo.repository || process.env.GITHUB_REPOSITORY || '';
 
   if (prHeadInfo.sha || prHeadInfo.repoID) {
-    core.info(`Using PR head info - sha: ${sha}, repoID: ${repoID}`);
+    core.info(`Using PR head info - sha: ${sha}, repoID: ${repoID}, repository: ${repository}`);
   }
 
   return {
@@ -67,6 +77,7 @@ function getGitHubInfo() {
     workflow,
     runId,
     runAttempt,
+    repository,
   };
 }
 
@@ -376,10 +387,9 @@ async function run() {
     }
 
     const coverageEntries = Object.keys(coverage).length;
-    const repository = process.env.GITHUB_REPOSITORY || '';
     const { compareUrl, commitUrl } = buildReportLinks({
       reportBaseUrl: reportUrl,
-      repository,
+      repository: githubInfo.repository,
       sha: githubInfo.sha,
       base,
       head,
