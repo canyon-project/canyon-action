@@ -28,6 +28,10 @@ inputs:
     description: 'Only upload coverage for PR changed files. Set to false for full coverage'
     required: false
     default: 'true'
+  report-url:
+    description: 'Canyon report base URL for links in summary'
+    required: false
+    default: 'https://app.canyonjs.io'
 runs:
   using: 'node20'
   main: 'dist/index.cjs'

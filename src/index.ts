@@ -234,31 +234,79 @@ async function sendRequest(
 }
 
 /**
+ * 生成 Canyon 报告链接
+ */
+function buildReportLinks(params: {
+  reportBaseUrl: string;
+  repository: string;
+  sha: string;
+  base?: string;
+  head?: string;
+}): { compareUrl?: string; commitUrl: string } {
+  const { reportBaseUrl, repository, sha, base, head } = params;
+  const baseUrl = reportBaseUrl.replace(/\/$/, '');
+  const commitUrl = `${baseUrl}/report/-/github/${repository}/commit/${sha}/-`;
+  const compareUrl =
+    base && head
+      ? `${baseUrl}/report/-/github/${repository}/compare/${base}...${head}/-`
+      : undefined;
+  return { compareUrl, commitUrl };
+}
+
+/**
  * 写入 Job Summary（显示在 Actions 运行页面的 Summary 区域）
  */
 async function writeJobSummary(params: {
-  buildHash: string;
+  buildHash?: string;
   changedFiles: string[];
   coverageEntries: number;
   onlyChanges: boolean;
+  skipped?: boolean;
+  compareUrl?: string;
+  commitUrl: string;
 }) {
-  const { buildHash, changedFiles, coverageEntries, onlyChanges } = params;
+  const {
+    buildHash,
+    changedFiles,
+    coverageEntries,
+    onlyChanges,
+    skipped,
+    compareUrl,
+    commitUrl,
+  } = params;
 
   const md: string[] = [];
   md.push('## Canyon Coverage Upload');
   md.push('');
-  md.push('| Key | Value |');
-  md.push('|:--|:--|');
-  md.push(`| **BuildHash** | \`${buildHash}\` |`);
-  md.push(`| **Coverage entries** | ${coverageEntries}${onlyChanges && changedFiles.length > 0 ? ' _(PR changed files only)_' : ''} |`);
-  if (changedFiles.length > 0) {
-    md.push(`| **PR changed files** | ${changedFiles.length} |`);
+
+  if (skipped) {
+    md.push('> ⏭️ **Skipped**: No coverage data for changed files, upload skipped.');
     md.push('');
+  } else if (buildHash) {
+    md.push('| Key | Value |');
+    md.push('|:--|:--|');
+    md.push(`| **BuildHash** | \`${buildHash}\` |`);
+    md.push(`| **Coverage entries** | ${coverageEntries}${onlyChanges && changedFiles.length > 0 ? ' _(PR changed files only)_' : ''} |`);
+    if (changedFiles.length > 0) {
+      md.push(`| **PR changed files** | ${changedFiles.length} |`);
+    }
+    md.push('');
+  }
+
+  md.push('### Report');
+  md.push('');
+  if (compareUrl) {
+    md.push(`- **[Changed files coverage](${compareUrl})**`);
+  }
+  md.push(`- **[Full coverage](${commitUrl})**`);
+  md.push('');
+
+  if (changedFiles.length > 0) {
     md.push('### Changed files');
     md.push('');
     changedFiles.forEach((f) => md.push(`- \`${f}\``));
+    md.push('');
   }
-  md.push('');
 
   await core.summary.addRaw(md.join('\n')).write();
 }
@@ -278,6 +326,8 @@ async function run() {
     const onlyChangesInput = core.getInput('only-changes');
     const onlyChanges =
       onlyChangesInput === '' ? true : core.getBooleanInput('only-changes');
+    const reportUrl =
+      core.getInput('report-url') || 'https://app.canyonjs.io';
 
     core.info(`Instrument CWD: ${instrumentCwd}`);
 
@@ -325,34 +375,57 @@ async function run() {
       }
     }
 
-    const mapInitData = prepareMapInitData(
-      coverage,
-      githubInfo,
-      instrumentCwd,
-      buildTarget,
-    );
+    const coverageEntries = Object.keys(coverage).length;
+    const repository = process.env.GITHUB_REPOSITORY || '';
+    const { compareUrl, commitUrl } = buildReportLinks({
+      reportBaseUrl: reportUrl,
+      repository,
+      sha: githubInfo.sha,
+      base,
+      head,
+    });
 
-    core.info('Uploading coverage map initialization...');
-    const mapInitUrl = `${canyonUrl.replace(/\/$/, '')}/api/coverage/map/init`;
-    const mapInitResult = await sendRequest(mapInitUrl, mapInitData, canyonToken);
+    let buildHash: string | undefined;
 
-    if (!mapInitResult.success) {
-      throw new Error(
-        `Map init failed: ${mapInitResult.message || 'Unknown error'}`,
+    if (coverageEntries === 0) {
+      core.info('Skipped: No coverage data for changed files, upload skipped.');
+    } else {
+      const mapInitData = prepareMapInitData(
+        coverage,
+        githubInfo,
+        instrumentCwd,
+        buildTarget,
       );
+
+      core.info('Uploading coverage map initialization...');
+      const mapInitUrl = `${canyonUrl.replace(/\/$/, '')}/api/coverage/map/init`;
+      const mapInitResult = await sendRequest(mapInitUrl, mapInitData, canyonToken) as {
+        success?: boolean;
+        buildHash?: string;
+        message?: string;
+      };
+
+      if (!mapInitResult.success) {
+        throw new Error(
+          `Map init failed: ${mapInitResult.message || 'Unknown error'}`,
+        );
+      }
+
+      buildHash = mapInitResult.buildHash;
+      core.info(`Coverage upload successful. BuildHash: ${buildHash}`);
+      core.setOutput('build-hash', buildHash);
     }
-
-    core.info(`Coverage upload successful. BuildHash: ${mapInitResult.buildHash}`);
-
-    core.setOutput('build-hash', mapInitResult.buildHash);
 
     // 输出到 Job Summary（Actions 运行页面的 Summary 区域）
     try {
       await writeJobSummary({
-        buildHash: mapInitResult.buildHash,
+        buildHash,
         changedFiles,
-        coverageEntries: Object.keys(coverage).length,
+        coverageEntries,
         onlyChanges,
+        skipped: coverageEntries === 0,
+        compareUrl,
+        commitUrl,
       });
     } catch (e) {
       core.warning(`Failed to write job summary: ${e}`);
